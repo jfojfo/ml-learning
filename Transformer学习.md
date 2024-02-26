@@ -8,22 +8,23 @@
 
 内积计算方法
 
-$ \begin{bmatrix} q_1 \ q_2 \ q_3 \end{bmatrix} \begin{bmatrix}
+$$
+\begin{bmatrix} q_1 \ q_2 \ q_3 \end{bmatrix} \begin{bmatrix}
 k_{1} \\
 k_{2} \\
 k_{3} \\
 \end{bmatrix} = q_1k_1 + q_2k_2 + q_3k_3
-$
+$$
 
-如果X向量是横着表示：$ X W_q (X W_k)^T = X W_q W_k^T X $
+如果X向量是横着表示：$` X W_q (X W_k)^T = X W_q W_k^T X `$
 
-如果X向量是竖着表示：$ (W_q X)^T W_k X = X^T W_q^T W_k X $
+如果X向量是竖着表示：$` (W_q X)^T W_k X = X^T W_q^T W_k X `$
 
-上面两种形式，$ X $ 和 $ X^T $ 都不会挨着，中间还会多一个W矩阵，不能单独看$PE(t) PE(t+k)$
+上面两种形式，$` X `$ 和 $` X^T `$ 都不会挨着，中间还会多一个W矩阵，不能单独看 $` PE(t) PE(t+k) `$
 
 ### 正弦位置编码的内积
 
-可以看到，只计算 $PE(t) PE(t+k)$ 时，内积确实只与k有关
+可以看到，只计算 $` PE(t) PE(t+k) `$ 时，内积确实只与k有关
 
 <img src="img/PosEncoding_definition.jpg" />
 
@@ -55,9 +56,9 @@ base=200时的曲线
 
 ### 实际看看W的影响
 
-前面提到的，在不包含W时，$PE(t) PE(t+k)$ 位置向量的内积只和相对位置 k 有关，且远程衰减.
+前面提到的，在不包含W时，$` PE(t) PE(t+k) `$ 位置向量的内积只和相对位置 k 有关，且远程衰减.
 
-实际情况是，$PE(t) W_q^T W_k PE(t+k)$，设 $ W = W_q^T W_k $，论文中说乘以W之后就不具备远程衰减性：
+实际情况是，$` PE(t) W_q^T W_k PE(t+k) `$，设 $` W = W_q^T W_k `$，论文中说乘以W之后就不具备远程衰减性：
 
 <img src="img/PosEncoding_inner_product_k.jpg" />
 <br />
@@ -140,9 +141,9 @@ LoRA的实现流程：
 * 模型的输入输出维度不变，输出时将BA与PLM的参数叠加。
 * 用随机高斯分布初始化A，用0矩阵初始化B，保证训练的开始此旁路矩阵依然是0矩阵。
 
-$ h = W_0 x + \Delta Wx = W_0 x + BAx = (W_0 + BA) x $
+$` h = W_0 x + \Delta Wx = W_0 x + BAx = (W_0 + BA) x `$
 
-$ W_0 \in \mathbb{R}^{d \times k}, B \in \mathbb{R}^{d \times r}, A \in \mathbb{R}^{r \times k} $
+$` W_0 \in \mathbb{R}^{d \times k}, B \in \mathbb{R}^{d \times r}, A \in \mathbb{R}^{r \times k} `$
 
 For a model like GPT-3, trainable parameters are reduced by 10000 times. This means instead of training 175 billion parameters, if you apply LoRA, you only have 17.5 million trainable parameters.
 
@@ -165,10 +166,10 @@ Prefix tuning会在每层transformer的多个attention的key跟value向量中插
 从代码实现看：
 * 降维生成 Q&K（128），由同一个Z分别与不同向量(gamma scale, beta offset)相乘得到
 * 升维生成 V（1536），虽然是为了模仿普通Transformer升维linear变换，但也可以看成得到了更丰富的特征维度
-* 当sequence长度n比特征维度d大时，$Q(K^TV)$ 比 $(QK^T)V$ 计算资源开销小，且存储空间小：
-  * $(Q_{n \times d}K_{n \times d}^T)V_{n \times d}$：d * n * n 次相乘相加得到attention $A_{n \times n}$，再 n * d * n 次相乘相加得到结果，总计算量为 2 * d * n * n
-  * $Q_{n \times d}(K_{n \times d}^TV_{n \times d})$：$KV$ 经过 n * d * d 次相乘相加得到 $D_{d \times d}$，再 d * d * n 次相乘相加得到结果，总计算量为 2 * d * d * n
-* Mixed Chunk计算全局attn（linear-attn）时采用了 $Q(K^TV)$ 方式减少计算量，计算局部attn（quad-attn）采用group分组减少计算量(d * n * n -> d * n * n / g = g * d * n/g * n/g)
+* 当sequence长度n比特征维度d大时，$` Q(K^TV)$ 比 $(QK^T)V `$ 计算资源开销小，且存储空间小：
+  * $` (Q_{n \times d}K_{n \times d}^T)V_{n \times d} `$：d * n * n 次相乘相加得到attention $` A_{n \times n} `$，再 n * d * n 次相乘相加得到结果，总计算量为 2 * d * n * n
+  * $` Q_{n \times d}(K_{n \times d}^TV_{n \times d}) `$：$`KV`$ 经过 n * d * d 次相乘相加得到 $`D_{d \times d}`$，再 d * d * n 次相乘相加得到结果，总计算量为 2 * d * d * n
+* Mixed Chunk计算全局attn（linear-attn）时采用了 $`Q(K^TV)`$ 方式减少计算量，计算局部attn（quad-attn）采用group分组减少计算量(d * n * n -> d * n * n / g = g * d * n/g * n/g)
 
 gau有个缺陷，q、k的维度必须一样
 
@@ -325,7 +326,7 @@ mask[None, None, :, :] 将 mask 新扩展出0、1维度，shape变为(1, 1, tgt_
 
 训练参数（from huggingface https://huggingface.co/mistralai/Mixtral-8x7B-v0.1/blob/main/config.json）：
 
-hidden_size: 就是dim($W_{q,k,v}$矩阵的特征维度，也是token embedding后的vector长度)，intermediate_size：mlp的高维映射dim，max_position_embeddings：输入sequence最大长度
+hidden_size: 就是dim($`W_{q,k,v}`$矩阵的特征维度，也是token embedding后的vector长度)，intermediate_size：mlp的高维映射dim，max_position_embeddings：输入sequence最大长度
 
 ```json
 {
